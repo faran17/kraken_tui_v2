@@ -50,7 +50,7 @@ app: build
 	@mkdir -p Kraken.app/Contents/MacOS
 	@mkdir -p Kraken.app/Contents/Resources
 	@cp $(BINARY) Kraken.app/Contents/MacOS/kraken-binary
-	@echo '#!/bin/bash\n# Get the directory where the script is located\nDIR="$$(cd "$$(dirname "$$0")" && pwd)"\n# Open a new terminal window and run the binary\nosascript -e "tell application \\"Terminal\\" to do script \\"$$DIR/kraken-binary; exit\\""' > Kraken.app/Contents/MacOS/Kraken
+	@echo '#!/bin/bash\nDIR="$$(cd "$$(dirname "$$0")" && pwd)"\nosascript -e "tell application \\"Terminal\\" to set newWin to do script \\"$$DIR/kraken-binary; exit\\"" -e "delay 0.5" -e "tell application \\"Terminal\\" to set numberOfColumns of newWin to 160" -e "tell application \\"Terminal\\" to set numberOfRows of newWin to 50"' > Kraken.app/Contents/MacOS/Kraken
 	@chmod +x Kraken.app/Contents/MacOS/Kraken
 	@cp KrakenTUIv2.0.png Kraken.app/Contents/Resources/icon.png
 	@echo "Kraken.app created successfully! Double-click it in Finder to run."

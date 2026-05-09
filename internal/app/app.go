@@ -251,7 +251,12 @@ func (m Model) View() string {
 	status := m.renderStatus(m.width)
 
 	// Join everything vertically.
-	view := lipgloss.JoinVertical(lipgloss.Left, header, mainBody, termPanel, status)
+	view := lipgloss.JoinVertical(lipgloss.Left, 
+		header, 
+		mainBody, 
+		termPanel, 
+		status,
+	)
 
 	if m.showSetup {
 		overlay := m.setup.View()
@@ -276,12 +281,16 @@ func (m Model) placeOverlay(base, overlay string) string {
 // renderPanel wraps a child's raw view output in a stylized border.
 func (m Model) renderPanel(idx int, title, content string, w, h int) string {
 	active := m.activePanel == idx
-	titleStr := styles.PanelTitle(active).Render(title)
+	
+	titleStr := styles.PanelTitle(active).Width(w).MaxHeight(1).Render(title)
 
-	// Join the title text with the main content text.
-	inner := lipgloss.JoinVertical(lipgloss.Left, titleStr, content)
+	// Be even more conservative: h - 4 (1 title, 2 borders, 1 padding)
+	innerH := h - 4
+	if innerH < 1 { innerH = 1 }
+	
+	clippedContent := lipgloss.NewStyle().MaxHeight(innerH).MaxWidth(w).Render(content)
+	inner := lipgloss.JoinVertical(lipgloss.Left, titleStr, clippedContent)
 
-	// Apply the bright orange border if active, otherwise dim gray.
 	if active {
 		return styles.PanelActive(w, h).Render(inner)
 	}
@@ -290,31 +299,29 @@ func (m Model) renderPanel(idx int, title, content string, w, h int) string {
 
 // renderHeader draws the top bar containing the app title and the panel tabs.
 func (m Model) renderHeader() string {
-	logo := styles.AppTitle.Render("🐙 KRAKEN TUI v2.0")
-	sub := styles.Dim.Render(" — AI · Files · Tasks")
+	w := m.width
+	if w < 100 { w = 160 }
 
-	tabs := []string{"[Files]", "[Chat]", "[Tasks]"}
-	var tabStr strings.Builder
-	for i, t := range tabs {
-		// Highlight the tab corresponding to the active panel
-		if i == m.activePanel {
-			tabStr.WriteString(styles.ChatSessionTabActive.Render(t))
-		} else {
-			tabStr.WriteString(styles.ChatSessionTab.Render(t))
-		}
-	}
+	// Line 1: Explicit Padding
+	line1 := strings.Repeat(" ", w)
 
-	left := logo + sub
-	right := tabStr.String()
-
-	// Calculate spacing needed to push the tabs to the right edge
-	gap := m.width - lipgloss.Width(left) - lipgloss.Width(right)
-	if gap < 0 {
-		gap = 0
-	}
-	line := left + strings.Repeat(" ", gap) + right
-
-	return styles.StatusBar.Width(m.width).Render(line)
+	// Line 2: High-Visibility Title Bar
+	titleText := " 🐙 KRAKEN TUI v2.0 — AI · Files · Tasks "
+	tabsText := " [Files]  [Chat]  [Tasks] "
+	
+	gapSize := w - len(titleText) - len(tabsText) - 5
+	if gapSize < 0 { gapSize = 0 }
+	gap := strings.Repeat(" ", gapSize)
+	
+	// Use a background style for the entire line to guarantee visibility
+	headerLineStyle := lipgloss.NewStyle().Background(lipgloss.Color(styles.ColorBgHover)).Width(w)
+	content := styles.AppTitle.Render(titleText) + gap + styles.ChatSessionTabActive.Render(tabsText)
+	line2 := headerLineStyle.Render(content)
+	
+	// Line 3: Separator
+	line3 := styles.Dim.Render(strings.Repeat("─", w))
+	
+	return line1 + "\n" + line2 + "\n" + line3
 }
 
 // renderStatus draws the bottom bar displaying context-aware keybindings.
@@ -400,25 +407,32 @@ func (m *Model) applySize() {
 	case 1: // Half
 		m.termHeight = m.height / 2
 	case 2: // Full
-		m.termHeight = m.height - 6
+		m.termHeight = m.height - 8
 	default: // Compact
 		m.termHeight = 12
 	}
 
 	widths, h := m.calculateDimensions()
-	m.files = m.files.SetSize(widths[0], h)
-	m.chat = m.chat.SetSize(widths[1], h)
-	m.todo = m.todo.SetSize(widths[2], h)
+	// Pass h-3 to children to account for panel title (1) and borders (2)
+	childH := h - 3
+	if childH < 1 { childH = 1 }
+
+	m.files = m.files.SetSize(widths[0], childH)
+	m.chat = m.chat.SetSize(widths[1], childH)
+	m.todo = m.todo.SetSize(widths[2], childH)
 	m.term = m.term.SetSize(m.width, m.termHeight)
 	m.setup = m.setup.SetSize(m.width, m.height)
 	m.help = m.help.SetSize(m.width, m.height)
 }
 
 func (m Model) calculateDimensions() ([3]int, int) {
-	headerH := 2 // Increased from 1 to prevent cutoff
+	headerH := 3 
 	statusH := 1
-	termH := m.termHeight + 2 // include borders
+	termH := m.termHeight + 2 
 
+	// panelH is the OUTER height of the top three panels.
+	// We subtract an additional 2 lines as a safety buffer to ensure the 
+	// top bar is never pushed off the screen by terminal window quirks.
 	panelH := m.height - headerH - statusH - termH - 2
 	if panelH < 5 {
 		panelH = 5
