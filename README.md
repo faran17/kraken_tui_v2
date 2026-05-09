@@ -131,7 +131,7 @@ GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o kraken.exe .
 | Debug log | `./debug.log` (via `tea.LogToFile`) |
 
 > [!TIP]
-> You can now configure your API Key and Theme directly via the **Setup Menu** (`s` key) within the app.
+> You can now configure your API Key and Theme directly via the **Setup Menu** (`Ctrl+s` key) within the app.
 
 ---
 

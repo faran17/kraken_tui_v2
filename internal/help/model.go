@@ -46,8 +46,9 @@ func (m Model) View() string {
 			[][2]string{
 				{"Tab", "Next Panel"},
 				{"Shift+Tab", "Prev Panel"},
-				{"s", "Setup Menu"},
-				{"?", "Show Help"},
+				{"Ctrl+s", "Setup Menu"},
+				{"Ctrl+t", "Cycle Term Size"},
+				{"Ctrl+h", "Show Help"},
 				{"Ctrl+C", "Quit"},
 			},
 		},
@@ -83,7 +84,7 @@ func (m Model) View() string {
 		s.WriteString("\n")
 	}
 
-	s.WriteString(styles.Dim.Render("Press ESC or ? to close"))
+	s.WriteString(styles.Dim.Render("Press ESC or Ctrl+h to close"))
 
 	box := lipgloss.NewStyle().
 		Padding(1, 4).

@@ -60,6 +60,9 @@ type Model struct {
 
 	// Persistent configuration
 	cfg *config.Config
+
+	// Terminal size state
+	termSize int // 0: Compact, 1: Half, 2: Full
 }
 
 // New constructs the root model. It initializes the three child panels and
@@ -122,7 +125,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.showSetup {
 		var cmd tea.Cmd
 		m.setup, cmd = m.setup.Update(msg)
-		if key, ok := msg.(tea.KeyMsg); ok && key.String() == "esc" {
+		if key, ok := msg.(tea.KeyMsg); ok && (key.String() == "esc" || key.String() == "ctrl+s") {
 			m.showSetup = false
 		}
 		return m, cmd
@@ -130,7 +133,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.showHelp {
 		var cmd tea.Cmd
 		m.help, cmd = m.help.Update(msg)
-		if key, ok := msg.(tea.KeyMsg); ok && (key.String() == "esc" || key.String() == "?") {
+		if key, ok := msg.(tea.KeyMsg); ok && (key.String() == "esc" || key.String() == "ctrl+h") {
 			m.showHelp = false
 		}
 		return m, cmd
@@ -145,11 +148,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Global quit sequence
 			return m, tea.Quit
 
-		case "s":
+		case "ctrl+s":
 			m.showSetup = true
 			return m, nil
 
-		case "?":
+		case "ctrl+h":
 			m.showHelp = true
 			return m, nil
 
@@ -171,20 +174,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.applySize()
 			return m, nil
 
-		case "shift+up", "ctrl+up", "alt+up":
-			// Move splitter UP: terminal grows, top panels shrink.
-			maxTermH := m.height - 11 // leave 5 lines for top panels
-			if m.termHeight < maxTermH {
-				m.termHeight++
-			}
-			m.applySize()
-			return m, nil
-
-		case "shift+down", "ctrl+down", "alt+down":
-			// Move splitter DOWN: terminal shrinks, top panels grow.
-			if m.termHeight > 3 {
-				m.termHeight--
-			}
+		case "ctrl+t":
+			// Cycle terminal size: Compact -> Half -> Full
+			m.termSize = (m.termSize + 1) % 3
 			m.applySize()
 			return m, nil
 		}
@@ -330,8 +322,9 @@ func (m Model) renderStatus(width int) string {
 	// Base commands always available
 	pills := []string{
 		styles.HelpPill("Tab", "switch panel"),
-		styles.HelpPill("s", "setup"),
-		styles.HelpPill("?", "help"),
+		styles.HelpPill("^S", "setup"),
+		styles.HelpPill("^T", "term size"),
+		styles.HelpPill("^H", "help"),
 		styles.HelpPill("^C", "quit"),
 	}
 
@@ -401,6 +394,17 @@ func (m *Model) applySize() {
 	if !m.ready {
 		return
 	}
+
+	// Calculate termHeight based on preset
+	switch m.termSize {
+	case 1: // Half
+		m.termHeight = m.height / 2
+	case 2: // Full
+		m.termHeight = m.height - 6
+	default: // Compact
+		m.termHeight = 12
+	}
+
 	widths, h := m.calculateDimensions()
 	m.files = m.files.SetSize(widths[0], h)
 	m.chat = m.chat.SetSize(widths[1], h)
