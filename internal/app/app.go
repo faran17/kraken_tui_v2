@@ -290,7 +290,7 @@ func (m Model) renderPanel(idx int, title, content string, w, h int) string {
 
 // renderHeader draws the top bar containing the app title and the panel tabs.
 func (m Model) renderHeader() string {
-	logo := styles.AppTitle.Render("🐙 KRAKEN")
+	logo := styles.AppTitle.Render("🐙 KRAKEN TUI v2.0")
 	sub := styles.Dim.Render(" — AI · Files · Tasks")
 
 	tabs := []string{"[Files]", "[Chat]", "[Tasks]"}
@@ -415,7 +415,7 @@ func (m *Model) applySize() {
 }
 
 func (m Model) calculateDimensions() ([3]int, int) {
-	headerH := 1
+	headerH := 2 // Increased from 1 to prevent cutoff
 	statusH := 1
 	termH := m.termHeight + 2 // include borders
 
