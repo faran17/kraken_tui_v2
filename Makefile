@@ -42,6 +42,18 @@ cross: tidy
 clean:
 	rm -f $(BINARY)
 	rm -rf dist/
+	rm -rf Kraken.app
+
+## app: package as a clickable macOS launcher
+app: build
+	@echo "Creating Kraken.app bundle..."
+	@mkdir -p Kraken.app/Contents/MacOS
+	@mkdir -p Kraken.app/Contents/Resources
+	@cp $(BINARY) Kraken.app/Contents/MacOS/kraken-binary
+	@echo '#!/bin/bash\n# Get the directory where the script is located\nDIR="$$(cd "$$(dirname "$$0")" && pwd)"\n# Open a new terminal window and run the binary\nosascript -e "tell application \\"Terminal\\" to do script \\"$$DIR/kraken-binary; exit\\""' > Kraken.app/Contents/MacOS/Kraken
+	@chmod +x Kraken.app/Contents/MacOS/Kraken
+	@cp KrakenTUIv2.0.png Kraken.app/Contents/Resources/icon.png
+	@echo "Kraken.app created successfully! Double-click it in Finder to run."
 
 ## help: list available targets
 help:

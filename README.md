@@ -1,6 +1,6 @@
 # 🐙 Kraken TUI v2
 
-![Kraken TUI Logo](./KrakenTUIv2.png)
+![Kraken TUI Logo](./KrakenTUIv2.0.png)
 
 Kraken TUI v2 is an evolution of the original, focusing on customization, persistence, and a refined user experience.
 
