@@ -30,8 +30,8 @@ Kraken TUI v2 is an evolution of the original, focusing on customization, persis
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/YOUR_USERNAME/kraken-tui.git
-cd kraken-tui
+git clone https://github.com/faran17/kraken_tui_v2.git
+cd kraken_tui_v2
 
 # 2. Set your Gemini API key
 export GEMINI_API_KEY="your-api-key-here"
