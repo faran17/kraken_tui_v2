@@ -56,8 +56,22 @@ func New() Model {
 	return Model{
 		input:    ti,
 		viewport: vp,
-		history:  make([]string, 0),
-		cwd:      cwd,
+		history: []string{
+			`                .---.`,
+			`               ( @ @ )`,
+			`            .--.\_V_/.--.`,
+			`           /   (  _  )   \`,
+			`          / /|  \_ _/  |\ \`,
+			`         / / |         | \ \`,
+			`        / /  \         /  \ \`,
+			`       (_ )   '-------'   ( _)`,
+			"",
+			`        K R A K E N  T U I  v2.1`,
+			"",
+			"Welcome! Current directory: " + cwd,
+			"",
+		},
+		cwd: cwd,
 	}
 }
 
@@ -149,7 +163,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.history = append(m.history, msg.output)
 		}
 		m.updateViewport()
-		return m, nil
 	}
 
 	// Always handle viewport scrolling first if possible.
@@ -190,8 +203,13 @@ func (m Model) View() string {
 	b.WriteString(m.viewport.View())
 	b.WriteString("\n")
 
+	divWidth := m.width - 2
+	if divWidth < 0 {
+		divWidth = 0
+	}
+
 	// Divider
-	b.WriteString(styles.Dim.Render(strings.Repeat("─", m.width-2)) + "\n")
+	b.WriteString(styles.Dim.Render(strings.Repeat("─", divWidth)) + "\n")
 
 	// The input line
 	if m.running {

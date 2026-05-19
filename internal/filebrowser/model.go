@@ -222,8 +222,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 		}
 	}
-	_ = cmd
-	return m, nil
+	return m, cmd
 }
 
 func (m Model) updateNewName(msg tea.Msg) (Model, tea.Cmd) {

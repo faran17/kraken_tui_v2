@@ -34,7 +34,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 func (m Model) View() string {
 	var s strings.Builder
 
-	s.WriteString(styles.Bold.Render("🐙 KRAKEN TUI v2 HELP"))
+	s.WriteString(styles.Bold.Render("🐙 Kraken TUI v2.1 Help"))
 	s.WriteString("\n\n")
 
 	sections := []struct {
@@ -47,6 +47,7 @@ func (m Model) View() string {
 				{"Tab", "Next Panel"},
 				{"Shift+Tab", "Prev Panel"},
 				{"Ctrl+s", "Setup Menu"},
+				{"Shift+←/→", "Resize Panels"},
 				{"Ctrl+t", "Cycle Term Size"},
 				{"Ctrl+h", "Show Help"},
 				{"Ctrl+C", "Quit"},
@@ -69,7 +70,16 @@ func (m Model) View() string {
 			[][2]string{
 				{"Enter", "Send Message"},
 				{"Alt+N", "New Session"},
+				{"Alt+X", "Delete Session"},
 				{"Alt+←/→", "Switch Sessions"},
+			},
+		},
+		{
+			"Terminal",
+			[][2]string{
+				{"Enter", "Run Command"},
+				{"PgUp/PgDn", "Scroll Output"},
+				{"Ctrl+t", "Resize Terminal"},
 			},
 		},
 	}

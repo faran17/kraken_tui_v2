@@ -28,6 +28,8 @@ const (
 	PanelTodo            // index 2: Todo List
 	PanelTerminal        // index 3: Terminal
 	panelCount           // total number of panels (4)
+
+	appTitle = "Kraken TUI v2.1"
 )
 
 // ── Model ─────────────────────────────────────────────────────────────────────
@@ -88,7 +90,7 @@ func New(cfg *config.Config) (Model, error) {
 	// Initialize the terminal panel.
 	termModel := terminal.New()
 
-	return Model{
+	m := Model{
 		activePanel: PanelFiles, // start with the file browser focused
 		files:       filebrowser.New(),
 		chat:        chatModel,
@@ -100,7 +102,13 @@ func New(cfg *config.Config) (Model, error) {
 		panelWidths: [3]float64{cfg.PanelWidths[0], cfg.PanelWidths[1], cfg.PanelWidths[2]},
 		termHeight:  cfg.TermHeight,
 		cfg:         cfg,
-	}, nil
+		width:       0,
+		height:      0,
+		ready:       false,
+	}
+
+	m.applySize()
+	return m, nil
 }
 
 // ── Tea interface ─────────────────────────────────────────────────────────────
@@ -108,11 +116,12 @@ func New(cfg *config.Config) (Model, error) {
 // Init returns a batch of all startup commands needed by the child panels.
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
-		m.spinner.Tick, // start the global loading spinner
-		m.chat.Init(),  // start cursor blink in chat input
-		m.todo.Init(),  // (currently no-op)
-		m.files.Init(), // (currently no-op)
-		m.term.Init(),  // start terminal
+		tea.SetWindowTitle(appTitle),
+		m.spinner.Tick,
+		m.chat.Init(),
+		m.todo.Init(),
+		m.files.Init(),
+		m.term.Init(),
 	)
 }
 
@@ -251,10 +260,10 @@ func (m Model) View() string {
 	status := m.renderStatus(m.width)
 
 	// Join everything vertically.
-	view := lipgloss.JoinVertical(lipgloss.Left, 
-		header, 
-		mainBody, 
-		termPanel, 
+	view := lipgloss.JoinVertical(lipgloss.Left,
+		header,
+		mainBody,
+		termPanel,
 		status,
 	)
 
@@ -281,13 +290,15 @@ func (m Model) placeOverlay(base, overlay string) string {
 // renderPanel wraps a child's raw view output in a stylized border.
 func (m Model) renderPanel(idx int, title, content string, w, h int) string {
 	active := m.activePanel == idx
-	
+
 	titleStr := styles.PanelTitle(active).Width(w).MaxHeight(1).Render(title)
 
 	// Be even more conservative: h - 4 (1 title, 2 borders, 1 padding)
 	innerH := h - 4
-	if innerH < 1 { innerH = 1 }
-	
+	if innerH < 1 {
+		innerH = 1
+	}
+
 	clippedContent := lipgloss.NewStyle().MaxHeight(innerH).MaxWidth(w).Render(content)
 	inner := lipgloss.JoinVertical(lipgloss.Left, titleStr, clippedContent)
 
@@ -300,28 +311,27 @@ func (m Model) renderPanel(idx int, title, content string, w, h int) string {
 // renderHeader draws the top bar containing the app title and the panel tabs.
 func (m Model) renderHeader() string {
 	w := m.width
-	if w < 100 { w = 160 }
-
-	// Line 1: Explicit Padding
-	line1 := strings.Repeat(" ", w)
 
 	// Line 2: High-Visibility Title Bar
-	titleText := " 🐙 KRAKEN TUI v2.0 — AI · Files · Tasks "
+	titleText := " 🐙 " + appTitle + " "
 	tabsText := " [Files]  [Chat]  [Tasks] "
-	
-	gapSize := w - len(titleText) - len(tabsText) - 5
-	if gapSize < 0 { gapSize = 0 }
+
+	// Use visual width for accurate gap calculation
+	visualWidth := lipgloss.Width(titleText) + lipgloss.Width(tabsText)
+	gapSize := w - visualWidth
+	if gapSize < 0 {
+		gapSize = 0
+	}
 	gap := strings.Repeat(" ", gapSize)
-	
-	// Use a background style for the entire line to guarantee visibility
+
 	headerLineStyle := lipgloss.NewStyle().Background(lipgloss.Color(styles.ColorBgHover)).Width(w)
 	content := styles.AppTitle.Render(titleText) + gap + styles.ChatSessionTabActive.Render(tabsText)
 	line2 := headerLineStyle.Render(content)
-	
+
 	// Line 3: Separator
 	line3 := styles.Dim.Render(strings.Repeat("─", w))
-	
-	return line1 + "\n" + line2 + "\n" + line3
+
+	return line2 + "\n" + line3
 }
 
 // renderStatus draws the bottom bar displaying context-aware keybindings.
@@ -353,6 +363,7 @@ func (m Model) renderStatus(width int) string {
 		pills = append(pills,
 			styles.HelpPill("Enter", "send"),
 			styles.HelpPill("Alt+N", "new session"),
+			styles.HelpPill("Alt+X", "del session"),
 			styles.HelpPill("Alt+←/→", "sessions"),
 		)
 	case PanelTodo:
@@ -415,7 +426,9 @@ func (m *Model) applySize() {
 	widths, h := m.calculateDimensions()
 	// Pass h-3 to children to account for panel title (1) and borders (2)
 	childH := h - 3
-	if childH < 1 { childH = 1 }
+	if childH < 1 {
+		childH = 1
+	}
 
 	m.files = m.files.SetSize(widths[0], childH)
 	m.chat = m.chat.SetSize(widths[1], childH)
@@ -426,27 +439,36 @@ func (m *Model) applySize() {
 }
 
 func (m Model) calculateDimensions() ([3]int, int) {
-	headerH := 3 
+	headerH := 2 // Title line + Separator line
 	statusH := 1
-	termH := m.termHeight + 2 
+	termH := m.termHeight
 
-	// panelH is the OUTER height of the top three panels.
-	// We subtract an additional 2 lines as a safety buffer to ensure the 
-	// top bar is never pushed off the screen by terminal window quirks.
-	panelH := m.height - headerH - statusH - termH - 2
+	// We subtract an additional 3 lines to account for the newlines
+	// inserted by lipgloss.JoinVertical between the 4 main UI blocks.
+	panelH := m.height - headerH - statusH - termH - 3
+
 	if panelH < 5 {
 		panelH = 5
 	}
 
-	var widths [3]int
 	totalW := m.width
+	var widths [3]int
+	usedW := 0
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 2; i++ {
 		w := int(float64(totalW)*m.panelWidths[i]) - 2 // -2 for borders
 		if w < 10 {
 			w = 10
 		}
 		widths[i] = w
+		usedW += w + 2
 	}
+
+	// The last panel takes the remainder to avoid gaps
+	widths[2] = totalW - usedW - 2
+	if widths[2] < 10 {
+		widths[2] = 10
+	}
+
 	return widths, panelH
 }

@@ -1,10 +1,11 @@
-# 🐙 Kraken TUI v2
+# 🐙 Kraken TUI v2.1
 
-![Kraken TUI Logo](./KrakenTUIv2.0.png)
+!Kraken TUI Logo
 
-Kraken TUI v2 is an evolution of the original, focusing on customization, persistence, and a refined user experience.
+Kraken TUI v2.1 is an evolution of the original, focusing on customization, persistence, and a refined user experience with enhanced layout stability.
 
-## New in v2
+## New in v2.1
+- 🐙 **Octopus Visuals**: New branding and executable icon support.
 - ⚙️ **Setup Menu**: Configure your experience without leaving the terminal.
 - 🎨 **Theme Engine**: Support for multiple themes (Dracula, Ocean, Gruvbox) with Light/Dark modes.
 - 💾 **Persistent Config**: All settings are saved automatically.

@@ -336,6 +336,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case "alt+n":
 			// Open a brand-new session.
 			m = m.newSession()
+		case "alt+x":
+			m = m.deleteActiveSession()
 		case "alt+left":
 			// Switch to the previous session.
 			if m.activeSession > 0 {
@@ -623,6 +625,23 @@ func (m Model) newSession() Model {
 	}
 	m.sessions = append(m.sessions, newSession())
 	m.activeSession = len(m.sessions) - 1
+	m.viewport.SetContent(m.renderMessages())
+	m.viewport.GotoBottom()
+	m.saveHistory()
+	return m
+}
+
+// deleteActiveSession removes the current session.
+func (m Model) deleteActiveSession() Model {
+	if len(m.sessions) <= 1 {
+		// If it's the last session, just reset it rather than deleting the slice element.
+		m.sessions[0] = newSession()
+	} else {
+		m.sessions = append(m.sessions[:m.activeSession], m.sessions[m.activeSession+1:]...)
+		if m.activeSession >= len(m.sessions) {
+			m.activeSession = len(m.sessions) - 1
+		}
+	}
 	m.viewport.SetContent(m.renderMessages())
 	m.viewport.GotoBottom()
 	m.saveHistory()
